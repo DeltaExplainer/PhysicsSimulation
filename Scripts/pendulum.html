@@ -1,0 +1,165 @@
+
+<html>
+<head>
+<style>
+button {
+    background-color: blue;
+    border: none;
+    color: white;
+    padding: 10px 25px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    margin: 4px 2px;
+    cursor: pointer;
+	border-radius: 8px;
+}
+
+body
+{
+	background-color:rgb(100, 100, 100);
+	font-family:Arial;
+	color: yellow;
+}
+
+#counter
+{
+	font-size: 20px;
+	font-family:Arial;
+	color: yellow;
+}
+
+</style>
+</head>
+<body>
+
+<h1>Pendulum Motion</h1>
+<h3>By Texas Wesleyan CSC Project Group</h3>
+<button id="start" type=button value="start">Start</button>
+<button id="stop" type=button value="stop">Stop</button>&nbsp&nbsp
+<label id="counter">Counter</label>
+<br><br>
+<canvas id="canvas" width="600" height="600">Your browser doesn't support HTML5</canvas>
+
+<script>
+var cvs = document.getElementById('canvas');
+var start_btn = document.getElementById('start');
+var stop_btn = document.getElementById('stop');
+var counter = document.getElementById("counter");
+
+var raf; //Request animation frame
+var ctx = cvs.getContext('2d');
+var track_radius;
+var canvas_bgcolor = 'rgba(100, 100, 100, 1.0)';
+
+var ball = new Ball(100, 100, 25, "blue");
+var t_1 = null;
+var theta_1 = null; 
+var direction = 1; //Clockwise:1, otherwise:0
+
+//Meter bar dimension
+var bar_width = cvs.width/20;   
+var bar_height = cvs.height/5;
+var size_factor = 11;  //Ratio of the track radius to the ball radius
+
+function Ball (x, y, r, color) {
+	this.x = x;
+	this.y = y;
+	this.radius = r;
+	this.color = color;
+  
+	this.draw = function(x, y) 
+	{
+		track_radius = size_factor*this.radius;
+		ctx.fillStyle = canvas_bgcolor;
+		ctx.fillRect(0,0,cvs.width,cvs.height);
+		ctx.clearRect(cvs.width/2-track_radius, cvs.height, 2*track_radius, track_radius);
+		
+		this.x = x;
+		this.y = y;
+		ctx.beginPath();
+		ctx.arc(this.x, this.y, this.radius, 0, Math.PI*2, true);
+		ctx.closePath();
+		//ctx.fillStyle = this.color;
+		var my_gradient = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.radius);
+		my_gradient.addColorStop(0, "white");
+		my_gradient.addColorStop(1, "black");
+		ctx.fillStyle = my_gradient;
+		ctx.fill();
+	} 
+};
+
+//Given the location and potential energy (%)
+function drawMeters(x, y, pe)
+{
+	ctx.beginPath();
+	ctx.fillStyle="#00FF00";	
+	ctx.fillRect(x-bar_width/2, y, bar_width, pe * bar_height);
+	ctx.fillStyle="#FF0000";	
+	ctx.fillRect(x-bar_width/2, y + pe * bar_height, bar_width, (1-pe) * bar_height);
+
+	ctx.moveTo(cvs.width/2+ (size_factor-1)*ball.radius, 50+bar_height);
+	ctx.lineTo(cvs.width/2- (size_factor-1)*ball.radius, 50+bar_height);
+	ctx.stroke();
+}
+
+//Draw a circular track
+function drawCircularTrack(x, y, r)
+{
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI, false); //false: counterclockwise
+	ctx.strokeStyle = 'rgba(255,255,0,1.0)';
+	ctx.shadowColor = "blue";
+	ctx.stroke();
+};
+
+//t_1 is prior time point; theta_1 is prior angle value
+function move(t){
+	if(!t_1)  //Very beginning
+	{
+	 t_1 = t;
+	 theta_1 = Math.PI*0.00001;
+	}
+
+	var deltaT = t - t_1;
+	var theta = theta_1 + direction * deltaT/1000*(Math.sqrt(2*9.8/ball.radius*Math.sin(theta_1)));
+
+	//When turning directions
+	if(theta > Math.PI)
+	{
+	   direction = -direction; 
+	   theta = Math.PI * 0.99999;
+	} 
+	else if(theta < 0)
+	{
+	   direction = -direction; 
+	   theta = Math.PI * 0.00001;
+	}
+
+	var dist = (size_factor-1)*ball.radius; //Distance between the track center and the ball center
+	ball.draw(cvs.width/2 + dist*Math.cos(theta), cvs.height/2 + dist*Math.sin(theta));
+	drawCircularTrack(cvs.width/2, cvs.height/2, size_factor*ball.radius);
+	counter.innerHTML = (t/1000).toFixed(2);
+
+	t_1 = t;
+	theta_1 = theta;
+	drawMeters(cvs.width/2+(size_factor-1)*ball.radius*Math.cos(theta), 50, Math.abs(Math.cos(theta)));
+	
+	raf = window.requestAnimationFrame(move);
+}
+
+//Start if clicking the start button
+start_btn.addEventListener("click",function(e){
+  raf = window.requestAnimationFrame(move);
+});
+
+//Stop if clicking the stop button
+stop_btn.addEventListener("click",function(e){
+  window.cancelAnimationFrame(raf);
+});
+
+</script>
+
+</body>
+</html>

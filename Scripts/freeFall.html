@@ -1,0 +1,152 @@
+
+<head>
+<style>
+button {
+    background-color: blue;
+    border: none;
+    color: white;
+    padding: 10px 25px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    margin: 4px 2px;
+    cursor: pointer;
+	border-radius: 8px;
+}
+
+body
+{
+	background-color:rgb(100, 100, 100);
+	font-family:Arial;
+	color: yellow;
+}
+
+#counter
+{
+	font-size: 20px;
+	font-family:Arial;
+	color: yellow;
+}
+
+</style>
+</head>
+
+<h1>Ball Falling in Air and Water</h1>
+<h3>By Texas Wesleyan CSC Project Group</h3>
+<button id="start" type=button value="start">Start</button>
+<button id="stop" type=button value="stop">Stop</button>&nbsp&nbsp
+<label id="counter">Counter</label>
+<br><br>
+<canvas id="canvas" width="600" height="600" style="border-style:solid"></canvas>
+
+<script>
+var cvs = document.getElementById('canvas');
+var start_btn = document.getElementById('start');
+var stop_btn = document.getElementById('stop');
+var counter = document.getElementById("counter");
+var ctx = cvs.getContext('2d');
+var vx0 = 20;
+var vy0 = 0;
+var x0 = 0;
+var y0 = 0;
+var t0 = null;
+var b = 0; //Drag coefficient = 6*PI*radius*mu (mu is fluid viscosity)
+var density_ratio = 0;
+cvs.height = window.innerHeight*0.8;
+cvs.width = window.innerWidth*0.9; 
+var h = cvs.height;
+var w = cvs.width;
+var h_air = 0.7*h;
+var ball = new Ball(100, 100, 15, "blue");
+var raf;
+
+
+function Ball (x, y, r, color) {
+  this.x = x;
+  this.y = y;
+  this.radius = r;
+  this.color = color;
+  this.draw = function() {
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.radius, 0, Math.PI*2, true);
+    ctx.closePath();
+    ctx.fillStyle = this.color;
+    ctx.fill();
+  };
+  
+    this.moveTo = function(x, y) {
+	ctx.clearRect(0,0,w,h); // clear canvas
+	this.x = x;
+	this.y = y;
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.radius, 0, Math.PI*2, true);
+    ctx.closePath();
+    ctx.fillStyle = this.color;
+    ctx.fill();
+	//var my_gradient = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.radius);
+	//my_gradient.addColorStop(0, "white");
+	//my_gradient.addColorStop(1, "blue");
+	//ctx.fillStyle = my_gradient;
+	//ctx.fill();
+  }
+  
+};
+
+function move(t){
+	t = t/1000;
+	if(!t0) t0 = t;
+	var deltaT = t - t0;
+
+	var m = Math.PI/6*Math.pow(2*ball.radius, 3)*1000/2.5;
+	var vx = vx0 - 6*Math.PI*ball.radius*0.001002/m *deltaT;
+	var x = x0+vx*deltaT;	
+	var vy = vy0 + (9.8*(1-density_ratio)-b*vy0)*deltaT;
+	var y = vy0*deltaT+y0;
+
+	if(x > w) x = 0;  //If the ball goes out of the frame, wrap around.
+	
+	ball.moveTo(x, y);
+
+	if(y > h_air)
+	{ 
+		density_ratio = 2.5;
+		ball.color = 'rgba(0, 0, 255, 0.5)';
+		b = 6*Math.PI*ball.radius*0.001002;
+	}
+	else
+	{
+	   	density_ratio = 0;
+		ball.color = 'rgba(0, 0, 255, 1.0)';
+		//b = 6*Math.PI*ball.radius*0.001002/100;
+		b = 0;
+	}	
+	ctx.beginPath();
+	ctx.strokeStyle="#00FF00";
+	ctx.moveTo(0, h_air);
+	ctx.lineTo(w, h_air);
+	ctx.stroke();
+	counter.innerHTML = (t).toFixed(2);
+
+	t0 = t;
+	y0 = y;
+	x0 = x;
+	vx0 = vx;
+	vy0 = vy;
+	raf = window.requestAnimationFrame(move);
+}
+//Start if clicking the start button
+start_btn.addEventListener("click",function(e){
+  raf = window.requestAnimationFrame(move);
+});
+
+//Stop if clicking the stop button
+stop_btn.addEventListener("click",function(e){
+  window.cancelAnimationFrame(raf);
+});
+
+
+
+
+
+</script>
